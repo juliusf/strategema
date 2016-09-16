@@ -11,6 +11,7 @@ void initialize_interconnect(Interconnect** interconnect){
 	return;
 	}
 	memset((*interconnect)->ram, 255, RAM_SIZE);
+	(*interconnect)->stack_ptr = 0;
 }
 
 void load_rom(Interconnect* interconnect, uint64_t rom_len, unsigned char* rom){
@@ -28,5 +29,14 @@ uint16_t read_word_from_ram(Interconnect* interconnect, uint16_t addr){
 		exit(-1);
 		return 0;
 	}
+}
+
+void push_stack(Interconnect* interconnect, uint16_t addr){
+	if (interconnect->stack_ptr +1 == STACK_SIZE){
+		fprintf(stderr, "Stack Overflow!\n" );
+		exit(0);
+	}
+	interconnect->stack[interconnect->stack_ptr] = addr;
+	interconnect->stack_ptr += 1;
 }
 

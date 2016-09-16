@@ -5,7 +5,7 @@
 #include <stdlib.h>
 
 int32_t read_from_disk(const char* path, uint64_t* length, unsigned char* rom[]){
-	
+
 	FILE* file;
 	unsigned char* buffer;
 	uint64_t fileLen;
@@ -15,7 +15,6 @@ int32_t read_from_disk(const char* path, uint64_t* length, unsigned char* rom[])
 		fprintf(stderr, "unable to open ROM file %s!\n", path);
 		return 1;
 	}
-
 	fseek(file, 0, SEEK_END);
 	fileLen = ftell(file);
 	fseek(file, 0, SEEK_SET);

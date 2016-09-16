@@ -5,6 +5,8 @@
 
 #include <inttypes.h>
 #include "interconnect.h"
+#include <stddef.h>
+
 typedef struct cpu_t{
 	uint8_t reg_gpr[NUM_GPR];
 	uint16_t reg_I;
@@ -17,4 +19,5 @@ typedef struct cpu_t{
 
 void initialize_cpu(Cpu** cpu, Interconnect* interconnect);
 void run(Cpu* cpu);
+void write_reg_gpr(Cpu* cpu, size_t index, uint8_t value);
 #endif /* CPU_H */
