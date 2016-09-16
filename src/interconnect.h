@@ -13,5 +13,6 @@ typedef struct interconnect_t{
 
 void initialize_interconnect(Interconnect** interconnect);
 void load_rom(Interconnect* Interconnect, uint64_t rom_len, unsigned char* rom);
+uint16_t read_word_from_ram(Interconnect* interconnect, uint16_t addr); 
 
 #endif /* INTERCONENCT_H */

@@ -11,11 +11,22 @@ void initialize_interconnect(Interconnect** interconnect){
 	return;
 	}
 	memset((*interconnect)->ram, 255, RAM_SIZE);
-
-	printf("interconnect RAM at 50: %i\n", (*interconnect)->ram[50]);
 }
 
 void load_rom(Interconnect* interconnect, uint64_t rom_len, unsigned char* rom){
 	memcpy(interconnect->ram + PROGRAM_START, rom, rom_len);
+}
+
+uint16_t read_word_from_ram(Interconnect* interconnect, uint16_t addr){
+	if ( (addr > 0x1ff) && (addr <= 0xfff) )
+	{
+		return ((interconnect->ram[addr] << 8) | 
+			    (interconnect->ram[addr+1])); 
+	} else 
+	{
+		fprintf(stderr, "Invalid Read from address: %x\n", addr);
+		exit(-1);
+		return 0;
+	}
 }
 

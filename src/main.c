@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include "util.h"
 #include "interconnect.h"
+#include "cpu.h"
 
 int main(int argc, const char* argv[]){
     uint64_t fileLen = 0;
@@ -12,10 +13,15 @@ int main(int argc, const char* argv[]){
     
     Interconnect* interconnect = NULL;
     initialize_interconnect(&interconnect);
-    printf("interconnect RAM at 50: %i\n", interconnect->ram[50]);
     load_rom(interconnect, fileLen, rom);
-    printf("rom at 200: %c\n", rom[200]);
+    free(rom);
+
+    Cpu* cpu = NULL;
+    initialize_cpu(&cpu, interconnect);
+
+    //printf("rom at 200: %c\n", rom[200]);
     printf("RAM at 200: %c\n", interconnect->ram[0x200 + 200]);
+    run(cpu);
     return 0;
 }
 
