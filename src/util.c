@@ -1,9 +1,13 @@
 #include "util.h"
+#include <inttypes.h>
+#include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h>
 
-int32_t load_rom(const char* path, uint64_t* length, char* rom[]){
+int32_t read_from_disk(const char* path, uint64_t* length, unsigned char* rom[]){
 	
 	FILE* file;
-	char* buffer;
+	unsigned char* buffer;
 	uint64_t fileLen;
 
 	file = fopen(path, "r");
@@ -15,7 +19,7 @@ int32_t load_rom(const char* path, uint64_t* length, char* rom[]){
 	fseek(file, 0, SEEK_END);
 	fileLen = ftell(file);
 	fseek(file, 0, SEEK_SET);
-	buffer = (char *) malloc(fileLen +1);
+	buffer = (unsigned char *) malloc(fileLen +1);
 
 	if (!buffer){
 		fprintf(stderr, "unable to allocate %" PRIu64  " bytes for ROMs\n", fileLen);
@@ -25,7 +29,6 @@ int32_t load_rom(const char* path, uint64_t* length, char* rom[]){
 	fclose(file);
 	*length = fileLen;
 	*rom = buffer;
-	    printf("rom at 200: %" PRIu64 "\n",fileLen);
-	fprintf(stdout, "successfully loaded ROM file %successfully\n", path);
+	fprintf(stdout, "successfully loaded ROM file %s\n", path);
 	return 0;
 }
