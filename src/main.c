@@ -20,7 +20,7 @@ int main(int argc, const char* argv[]){
     initialize_cpu(&cpu, interconnect);
 
     //printf("rom at 200: %c\n", rom[200]);
-    printf("RAM at 200: %c\n", interconnect->ram[0x200 + 200]);
+
     run(cpu);
     return 0;
 }

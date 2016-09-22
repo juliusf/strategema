@@ -20,4 +20,5 @@ typedef struct cpu_t{
 void initialize_cpu(Cpu** cpu, Interconnect* interconnect);
 void run(Cpu* cpu);
 void write_reg_gpr(Cpu* cpu, size_t index, uint8_t value);
+uint8_t read_reg_gpr(Cpu* cpu, size_t index);
 #endif /* CPU_H */

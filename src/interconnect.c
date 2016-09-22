@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include "gfx.h"
 
 void initialize_interconnect(Interconnect** interconnect){
 	*interconnect = (Interconnect*) malloc(sizeof(Interconnect));
@@ -10,8 +11,11 @@ void initialize_interconnect(Interconnect** interconnect){
 	fprintf(stderr, "unable to create interconnect\n");
 	return;
 	}
-	memset((*interconnect)->ram, 255, RAM_SIZE);
+	printf("initializing %i bytes of RAM\n", RAM_SIZE);
+	memset((*interconnect)->ram, 46, RAM_SIZE);
 	(*interconnect)->stack_ptr = 0;
+	(*interconnect)->gfx = NULL;
+	initialize_gfx(&((*interconnect)->gfx));
 }
 
 void load_rom(Interconnect* interconnect, uint64_t rom_len, unsigned char* rom){
@@ -40,3 +44,16 @@ void push_stack(Interconnect* interconnect, uint16_t addr){
 	interconnect->stack_ptr += 1;
 }
 
+uint16_t pop_stack(Interconnect* interconnect){
+	if(interconnect->stack_ptr == 0){
+		fprintf(stderr, "Stack Underflow!\n" );
+		exit(0);
+	}
+	interconnect->stack_ptr -= 1;
+	uint16_t addr = interconnect->stack[interconnect->stack_ptr];
+	return addr;
+}
+
+uint8_t draw_on_screen(Interconnect* interconnect, uint8_t screen_loc_x, uint8_t screen_loc_y, uint8_t memory_loc, uint8_t len){
+	return draw_sprite(interconnect->gfx, screen_loc_y, screen_loc_y, len, &(interconnect->ram[memory_loc]));
+}
