@@ -7,6 +7,11 @@
 #include "cpu.h"
 
 int main(int argc, const char* argv[]){
+    if(argc != 2) {
+        fprintf(stderr, "Missing first argument (the rom to load).\n");
+        return 1;
+    }
+
     uint64_t fileLen = 0;
     unsigned char* rom = NULL;
     read_from_disk(argv[1], &fileLen, &rom);
