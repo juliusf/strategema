@@ -9,16 +9,14 @@ void* timer_thread(void* timer);
 
 void initialize_timer(Timer** timer){
 	(*timer) = (Timer*) malloc(sizeof(Timer));
-	if (! (*timer))
-	{
+	if (! (*timer)){
 		fprintf(stderr, "Unable to initialize timer!\n");
 		return;
 	}
 	(*timer)->value = 0;
 	(*timer)->mutex = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
 
-	if(pthread_create(&((*timer)->thread), NULL, timer_thread, &(*timer) ) ) {
-
+	if(pthread_create(&((*timer)->thread), NULL, timer_thread, &(*timer))){
 		fprintf(stderr, "Error creating Timerthread\n");
 		return;
 	}
@@ -31,8 +29,7 @@ void* timer_thread(void* timer){
 		usleep(sleep_usecs);
 
 		pthread_mutex_lock(&(my_timer->mutex));
-			if (my_timer->value > 0)
-			{
+			if (my_timer->value > 0){
 				my_timer->value -= 1;
 			}
 		pthread_mutex_unlock(&(my_timer->mutex));
