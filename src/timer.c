@@ -25,14 +25,12 @@ void initialize_timer(Timer** timer){
 }
 
 void* timer_thread(void* timer){
-	printf("Hello from Thread2!\n");
 	Timer* my_timer = (Timer*) timer;
 	const unsigned int sleep_usecs = SLEEP_MS * 1000;
 	while(1){
 		usleep(sleep_usecs);
 
 		pthread_mutex_lock(&(my_timer->mutex));
-			printf("Hi Hi\n");
 			if (my_timer->value > 0)
 			{
 				my_timer->value -= 1;
@@ -50,7 +48,7 @@ void set_timer_value(Timer* timer, uint8_t value){
 uint8_t get_timer_value(Timer* timer){
 	uint8_t value_copy = 0;
 	pthread_mutex_lock(&(timer->mutex));
-		value_copy = timer->value; 
+		value_copy = timer->value;
 	pthread_mutex_unlock(&(timer->mutex));
 	return value_copy;
 }
