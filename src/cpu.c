@@ -1,9 +1,11 @@
 #include "cpu.h"
+#include "timer.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
 #include <stdlib.h>
+
 
 
 void halt_invalid_instruction(uint16_t opcode, uint16_t instruction);
@@ -17,6 +19,7 @@ void initialize_cpu(Cpu** cpu, Interconnect* interconnect){
 	(*cpu)->reg_PC = PROGRAM_START;
 	(*cpu)->interconnect = interconnect;
 
+	initialize_timer( &((*cpu)->reg_DT));
 	srand(time(NULL));  // initializing random
 }
 
@@ -109,8 +112,7 @@ void run_instructtion(Cpu* cpu)
 				}
 				break;
 				case 0xf015: { //LD DT, VX
-					printf("Timers not implemented!\n");
-					goto DEBUG;
+					set_timer_value(cpu->reg_DT,VX);
 				}
 				break;
 				default:
@@ -147,10 +149,10 @@ void write_reg_gpr(Cpu* cpu, size_t index, uint8_t value){
 }
 
 uint8_t read_reg_gpr(Cpu* cpu, size_t index){
-	if (index !=0xF && index <= NUM_GPR){
+	if (index <= NUM_GPR){
 		return cpu->reg_gpr[index];
 	}else{
-		fprintf(stderr, "Read from invalid general purpose register!\n");
+		fprintf(stderr, "Read from invalid general purpose register: %lu \n", index);
 		exit(-1);
 	}
 }

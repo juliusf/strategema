@@ -1,7 +1,7 @@
 CC=clang
-CFLAGS=-std=c99 -pedantic -Wall -Wextra -Werror -Wno-unused-function -Wno-unused-parameter -Wno-overlength-strings
-LDFLAGS=
-SOURCES=src/main.c src/util.c src/interconnect.c src/cpu.c src/gfx.c
+CFLAGS=-std=gnu99 -pedantic -Wall -Wextra -Werror -Wno-unused-function -Wno-unused-parameter -Wno-overlength-strings
+LDFLAGS=-lpthread
+SOURCES=src/main.c src/util.c src/interconnect.c src/cpu.c src/gfx.c src/timer.c
 OBJECTS=$(SOURCES:.c=.o)
 EXECUTABLE=bin/strategema
 
