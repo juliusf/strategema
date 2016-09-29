@@ -25,9 +25,9 @@ void load_rom(Interconnect* interconnect, uint64_t rom_len, unsigned char* rom){
 uint16_t read_word_from_ram(Interconnect* interconnect, uint16_t addr){
 	if ( (addr > 0x1ff) && (addr <= 0xfff) )
 	{
-		return ((interconnect->ram[addr] << 8) | 
-			    (interconnect->ram[addr+1])); 
-	} else 
+		return ((interconnect->ram[addr] << 8) |
+			    (interconnect->ram[addr+1]));
+	} else
 	{
 		fprintf(stderr, "Invalid Read from address: %x\n", addr);
 		exit(-1);
@@ -40,8 +40,8 @@ void push_stack(Interconnect* interconnect, uint16_t addr){
 		fprintf(stderr, "Stack Overflow!\n" );
 		exit(0);
 	}
-	interconnect->stack[interconnect->stack_ptr] = addr;
 	interconnect->stack_ptr += 1;
+	interconnect->stack[interconnect->stack_ptr] = addr;
 }
 
 uint16_t pop_stack(Interconnect* interconnect){
@@ -50,10 +50,10 @@ uint16_t pop_stack(Interconnect* interconnect){
 		exit(0);
 	}
 	interconnect->stack_ptr -= 1;
-	uint16_t addr = interconnect->stack[interconnect->stack_ptr];
+	uint16_t addr = interconnect->stack[interconnect->stack_ptr + 1];
 	return addr;
 }
 
 uint8_t draw_on_screen(Interconnect* interconnect, uint8_t screen_loc_x, uint8_t screen_loc_y, uint8_t memory_loc, uint8_t len){
-	return draw_sprite(interconnect->gfx, screen_loc_y, screen_loc_y, len, &(interconnect->ram[memory_loc]));
+	return draw_sprite(interconnect->gfx, screen_loc_x, screen_loc_y, len, &(interconnect->ram[memory_loc]));
 }

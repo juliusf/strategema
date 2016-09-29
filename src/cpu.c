@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
+#include <stdlib.h>
 
 
 void halt_invalid_instruction(uint16_t opcode, uint16_t instruction);
@@ -14,6 +16,8 @@ void initialize_cpu(Cpu** cpu, Interconnect* interconnect){
 	}
 	(*cpu)->reg_PC = PROGRAM_START;
 	(*cpu)->interconnect = interconnect;
+
+	srand(time(NULL));  // initializing random
 }
 
 void run_instructtion(Cpu* cpu)
@@ -22,7 +26,7 @@ void run_instructtion(Cpu* cpu)
 	uint16_t opcode = (instruction >> 12) & 0xF;
 	uint16_t VX = (instruction >> 8) & 0xF;
 	uint16_t VY = (instruction >> 4) & 0xF;
-	printf("Executing instruction %x\n", instruction);
+
 	switch (opcode){
 		case 0x0:{
 			switch(instruction){ 
@@ -36,11 +40,31 @@ void run_instructtion(Cpu* cpu)
 			}
 		}
 		break;
+		case 0x1:{ // JMP ADDR
+			uint16_t addr = instruction & 0x0FFF;
+			cpu->reg_PC = addr;
+			return;
+		}
+		break;
 		case 0x2:{ //CALL addr
 			uint16_t addr = instruction & 0xFFF;
 			push_stack(cpu->interconnect, cpu->reg_PC +2);
 			cpu->reg_PC = addr;
 			return;
+		}
+		break;
+		case 0x3:{ //SE Vx == byte
+			uint8_t value = (instruction) & 0x00FF;
+			if (value == read_reg_gpr(cpu, VX)){
+				cpu->reg_PC += 2;
+			}
+		}
+		break;
+		case 0x4:{ //SE VX != byte
+			uint8_t value = (instruction) & 0x00FF;
+			if (value != read_reg_gpr(cpu, VX)){
+				cpu->reg_PC += 2;
+			}
 		}
 		break;
 		case 0x6:{ // LD Vx, byte
@@ -59,17 +83,45 @@ void run_instructtion(Cpu* cpu)
 			cpu->reg_I = addr;
 		}
 		break;
+		case 0xc:{ // RND Vx, byte
+			uint8_t random = rand();
+			uint16_t value = (instruction) & 0x00FF;
+			write_reg_gpr(cpu, VX, random & value);
+		}
+		break;
 		case 0xd:{ // DRW Vx, Vy, nibble
 			uint8_t nibble = instruction & 0x00F;
 			uint8_t x_coord = read_reg_gpr(cpu, VX);
 			uint8_t y_coord = read_reg_gpr(cpu, VY);
 
-			draw_on_screen(cpu->interconnect, x_coord, y_coord, cpu->reg_I, nibble);
-			goto DEBUG;
+			if ( draw_on_screen(cpu->interconnect, x_coord, y_coord, cpu->reg_I, nibble) ){
+				cpu->reg_gpr[15] = 1;
+			}else{
+				cpu->reg_gpr[15] = 0;
+			}
+			
 		}
 		break;
+		case 0xf:{
+			switch (instruction & 0xF0FF){
+				case 0xf01e: { //ADD I, VX
+					cpu->reg_I += read_reg_gpr(cpu, VX);
+				}
+				break;
+				case 0xf015: { //LD DT, VX
+					printf("Timers not implemented!\n");
+					goto DEBUG;
+				}
+				break;
+				default:
+				halt_invalid_instruction(opcode, instruction);
+				goto DEBUG;
+			}
+		break;
+		}
 		default:
 			halt_invalid_instruction(opcode, instruction);
+	
 	}
 
 	cpu->reg_PC += 2;
@@ -77,6 +129,7 @@ void run_instructtion(Cpu* cpu)
 
 	DEBUG:
 		fprintf(stderr, "DEBUG: instruction: %x opcode: %x VX: %x VY: %x\n", instruction, opcode, VX, VY);
+		print_debug_cpu(cpu);
 		exit(-1);
 }
 void halt_invalid_instruction(uint16_t opcode, uint16_t instruction){
@@ -108,4 +161,11 @@ void run(Cpu* cpu){
 	}
 }
 
+void print_debug_cpu(Cpu* cpu){
+	printf("Register Contents:\n");
+
+	for (int i = 0 ; i < NUM_GPR; i++){
+		printf("REG_GPR[%i]: 0x%x\n", i, cpu->reg_gpr[i]);
+	}
+}
 
