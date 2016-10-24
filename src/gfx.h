@@ -9,6 +9,7 @@
 
 typedef struct gfx_t{
 	unsigned char back_buffer[RES_X][RES_Y];
+	char debug_string[RES_X + 1];
 } Gfx;
 
 void initialize_gfx(Gfx** gfx);

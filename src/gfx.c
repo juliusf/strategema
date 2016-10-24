@@ -8,7 +8,7 @@ void draw_screen(Gfx* gfx);
 uint8_t draw_pixel(Gfx* gfx, uint8_t x, uint8_t y);
 void initialize_gfx(Gfx** gfx){
 	*(gfx) = (Gfx*) malloc(sizeof(Gfx));
-	memset((*gfx), 0x00, RES_X * RES_Y);
+	memset((*gfx), 0x00, RES_X * RES_Y + RES_X + 1); // HACKY	
 }
 
 uint8_t draw_sprite(Gfx* gfx, uint8_t pos_x, uint8_t pos_y, uint8_t sprite_len, unsigned char sprite[]){
@@ -52,20 +52,15 @@ void clear_backbuffer(Gfx* gfx){
 
 void draw_screen(Gfx* gfx){
 	for (int y = 0; y < RES_Y; y++){
-		char* display_string = (char*) malloc(RES_X + 1);
-		if (! display_string){
-			printf("could not allocate display_string\n");
-			exit(-1);
-		}
+
 		for (int x = 0; x < RES_X; x++){
 			if(gfx->back_buffer[x][y]){
-				display_string[x] = 'o';
+				gfx->debug_string[x] = 'o';
 			}else{
-				display_string[x] = ' ';
+				gfx->debug_string[x] = ' ';
 			}
 		}
-		printf("|%s|%i\n", display_string,y);
-		free(display_string);
+		printf("|%s|%i\n", gfx->debug_string,y);
 	}
 	printf("--------------------------------\n");
 }
