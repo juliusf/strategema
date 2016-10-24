@@ -54,6 +54,10 @@ uint16_t pop_stack(Interconnect* interconnect){
 	return addr;
 }
 
-uint8_t draw_on_screen(Interconnect* interconnect, uint8_t screen_loc_x, uint8_t screen_loc_y, uint8_t memory_loc, uint8_t len){
+uint8_t draw_on_screen(Interconnect* interconnect, uint8_t screen_loc_x, uint8_t screen_loc_y, uint16_t memory_loc, uint8_t len){
 	return draw_sprite(interconnect->gfx, screen_loc_x, screen_loc_y, len, &(interconnect->ram[memory_loc]));
+}
+
+void clear_screen(Interconnect* interconnect){
+	clear_backbuffer(interconnect->gfx);
 }

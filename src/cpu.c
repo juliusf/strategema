@@ -38,6 +38,10 @@ void run_instructtion(Cpu* cpu)
 					return;
 				}
 				break;
+				case 0x00E0:{ // CLS
+					clear_screen(cpu->interconnect);
+				}
+				break;
 				default:
 					halt_invalid_instruction(opcode, instruction); 
 			}
@@ -96,7 +100,6 @@ void run_instructtion(Cpu* cpu)
 			uint8_t nibble = instruction & 0x00F;
 			uint8_t x_coord = read_reg_gpr(cpu, VX);
 			uint8_t y_coord = read_reg_gpr(cpu, VY);
-
 			if ( draw_on_screen(cpu->interconnect, x_coord, y_coord, cpu->reg_I, nibble) ){
 				cpu->reg_gpr[15] = 1;
 			}else{

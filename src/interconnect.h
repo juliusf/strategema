@@ -20,5 +20,6 @@ void load_rom(Interconnect* Interconnect, uint64_t rom_len, unsigned char* rom);
 uint16_t read_word_from_ram(Interconnect* interconnect, uint16_t addr); 
 void push_stack(Interconnect* interconnect, uint16_t addr);
 uint16_t pop_stack(Interconnect* interconnect);
-uint8_t draw_on_screen(Interconnect* interconnect, uint8_t screen_loc_x, uint8_t screen_loc_y, uint8_t memory_loc, uint8_t len); 
+uint8_t draw_on_screen(Interconnect* interconnect, uint8_t screen_loc_x, uint8_t screen_loc_y, uint16_t memory_loc, uint8_t len); 
+void clear_screen(Interconnect* interconnect);
 #endif /* INTERCONENCT_H */

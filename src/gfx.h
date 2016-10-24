@@ -12,5 +12,6 @@ typedef struct gfx_t{
 } Gfx;
 
 void initialize_gfx(Gfx** gfx);
-uint8_t draw_sprite(Gfx* gfx, uint8_t pos_x, uint8_t pos_y, uint8_t sprite_len, unsigned char* sprite);
+uint8_t draw_sprite(Gfx* gfx, uint8_t pos_x, uint8_t pos_y, uint8_t sprite_len, unsigned char sprite[]);
+void clear_backbuffer(Gfx* gfx);
 #endif /* GFX_H */

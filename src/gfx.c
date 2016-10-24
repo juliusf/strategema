@@ -5,44 +5,68 @@
 
 
 void draw_screen(Gfx* gfx);
-uint8_t set_pixel(Gfx*gfx, uint8_t X, uint8_t Y);
-
+uint8_t draw_pixel(Gfx* gfx, uint8_t x, uint8_t y);
 void initialize_gfx(Gfx** gfx){
 	*(gfx) = (Gfx*) malloc(sizeof(Gfx));
 	memset((*gfx), 0x00, RES_X * RES_Y);
 }
 
-uint8_t draw_sprite(Gfx* gfx, uint8_t pos_x, uint8_t pos_y, uint8_t sprite_len, unsigned char* sprite){
-	printf("pos_x: %x pos_y %x \n", pos_x, pos_y);
-	uint8_t VX = FALSE;
-	for (int i = pos_y ; i < pos_y + sprite_len; i ++){
-		if (set_pixel(gfx, i, pos_x)){
-			VX =TRUE;
+uint8_t draw_sprite(Gfx* gfx, uint8_t pos_x, uint8_t pos_y, uint8_t sprite_len, unsigned char sprite[]){
+	uint8_t collision = FALSE;
+	
+	for (int i = 0; i < sprite_len; i ++){ // lines of the sprite
+		uint8_t current_sprite = (uint8_t) sprite[i];
+		uint8_t offset = 0;
+		for (unsigned int mask = 0x80; mask != 0; mask >>= 1){
+			uint8_t pixel = current_sprite & mask;
+			if (pixel ) {
+				if (draw_pixel(gfx, pos_x + offset, pos_y + i)){
+					collision = TRUE;
+				}
+			}
+			offset++;
 		}
 	}
 	draw_screen(gfx);
-	return VX;
+	return collision;
+}
+
+uint8_t draw_pixel(Gfx* gfx, uint8_t x, uint8_t y){
+	if(!gfx->back_buffer[x % RES_X][y % RES_Y]){
+		gfx->back_buffer[x % RES_X][y % RES_Y] = TRUE;
+		return FALSE;
+	}else{
+		gfx->back_buffer[x % RES_X][y % RES_Y] = FALSE;
+		return TRUE;
+	}
+}
+
+void clear_backbuffer(Gfx* gfx){
+
+	for(int x = 0; x < RES_X; x++){
+		for (int y = 0; y < RES_Y; y++){
+			gfx->back_buffer[x][y] = FALSE;
+		}
+	}
 }
 
 void draw_screen(Gfx* gfx){
-	for (int line = 0; line < RES_Y; line++){
+	for (int y = 0; y < RES_Y; y++){
 		char* display_string = (char*) malloc(RES_X + 1);
-		for (int col = 0; col < RES_X; col++){
-			if(gfx->back_buffer[line][col]){
-				display_string[col] = 'O';
-			}else{
-				display_string[col] = ' ';
-			}
-
+		if (! display_string){
+			printf("could not allocate display_string\n");
+			exit(-1);
 		}
-		printf("|%s|\n", display_string);
+		for (int x = 0; x < RES_X; x++){
+			if(gfx->back_buffer[x][y]){
+				display_string[x] = 'o';
+			}else{
+				display_string[x] = ' ';
+			}
+		}
+		printf("|%s|%i\n", display_string,y);
 		free(display_string);
 	}
 	printf("--------------------------------\n");
 }
 
-uint8_t set_pixel(Gfx*gfx, uint8_t x, uint8_t y){
-	uint8_t pix = gfx->back_buffer[x][y];
-	gfx->back_buffer[x][y] = ! pix;
-	return !pix;
-}
