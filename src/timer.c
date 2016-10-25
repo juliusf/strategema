@@ -8,7 +8,6 @@
 void* timer_thread(void* timer);
 
 void initialize_timer(Timer** timer){
-	printf("TIMER INIT\n");
 	(*timer) = (Timer*) malloc(sizeof(Timer));
 	if (! (*timer)){
 		fprintf(stderr, "Unable to initialize timer!\n");
@@ -26,7 +25,6 @@ void initialize_timer(Timer** timer){
 void* timer_thread(void* timer){
 	Timer* my_timer = (Timer*) timer;
 	const unsigned int sleep_usecs = SLEEP_MS * 1000;
-	printf("TIMER START\n");
 	while(1){
 		usleep(sleep_usecs);
 

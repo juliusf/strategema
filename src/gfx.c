@@ -28,7 +28,6 @@ uint8_t draw_sprite(Gfx* gfx, uint8_t pos_x, uint8_t pos_y, uint8_t sprite_len, 
 			offset++;
 		}
 	}
-	//draw_screen(gfx);
 	update_frame(gfx);
 	return collision;
 }

@@ -4,14 +4,14 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <time.h>
-#include <stdlib.h>
 #include <unistd.h>
+#include <time.h>
 
 
 
 void halt_invalid_instruction(uint16_t opcode, uint16_t instruction);
-
+void debug_state(Cpu* cpu, uint16_t instruction, uint16_t opcode, uint16_t VX, uint16_t VY);
+uint8_t should_break(Cpu* cpu, uint16_t opcode);
 void initialize_cpu(Cpu** cpu, Interconnect* interconnect){
 	*cpu = (Cpu*) malloc(sizeof(Cpu));
 	if (!*cpu){
@@ -20,19 +20,33 @@ void initialize_cpu(Cpu** cpu, Interconnect* interconnect){
 	}
 	(*cpu)->reg_PC = PROGRAM_START;
 	(*cpu)->interconnect = interconnect;
+	(*cpu)->op_count = 0;
+	
+	(*cpu)->num_breakpoints = 0;
+
 
 	initialize_timer( &((*cpu)->reg_DT));
 	srand(time(NULL));  // initializing random
 }
 
-void run_instructtion(Cpu* cpu)
+void run_instruction(Cpu* cpu, uint8_t debug_enabled)
 {
-	const unsigned int sleep_usecs = 2 * 1000;
+	const unsigned int sleep_usecs = 5 * 1000;  // hack for preventing too fast drawing
 	usleep(sleep_usecs);
 	uint16_t instruction = read_word_from_ram(cpu->interconnect, cpu->reg_PC);
 	uint16_t opcode = (instruction >> 12) & 0xF;
 	uint16_t VX = (instruction >> 8) & 0xF;
 	uint16_t VY = (instruction >> 4) & 0xF;
+	
+	if (debug_enabled){
+			printf("op count: %i - instruction: 0x%x\n", cpu->op_count, instruction);
+		if ( cpu->num_breakpoints == 0 || should_break(cpu, opcode))
+		{
+			debug_state(cpu, instruction, opcode, VX, VY);
+		}
+	}
+
+
 
 	switch (opcode){
 		case 0x0:{
@@ -90,6 +104,46 @@ void run_instructtion(Cpu* cpu)
 			write_reg_gpr(cpu, VX, new_value);
 		}
 		break;
+		case 0x8:{
+			switch(instruction & 0xF00F){
+				case (0x8000):{ // Vx = Vy
+					uint16_t val = read_reg_gpr(cpu, VY);
+					write_reg_gpr(cpu, VX, val);
+				}
+				break;
+				case (0x8001):{ //OR VX, VY
+					uint16_t VX_val = read_reg_gpr(cpu, VX);
+					uint16_t VY_val = read_reg_gpr(cpu, VY);
+					uint16_t result = VX_val | VY_val;
+					write_reg_gpr(cpu, VX, result);
+				}
+				break;
+				case(0x8002):{ //AND VX, Vy
+					uint16_t VX_val = read_reg_gpr(cpu, VX);
+					uint16_t VY_val = read_reg_gpr(cpu, VY);
+					uint16_t result = VX_val & VY_val;
+					write_reg_gpr(cpu, VX, result);
+				}
+				break;
+				case(0x8005):{ //SUB VX, Vy
+					uint16_t VX_val = read_reg_gpr(cpu, VX);
+					uint16_t VY_val = read_reg_gpr(cpu, VY);
+					if (VX_val > VY_val){
+						write_reg_gpr(cpu, 15, 1);
+					}else
+					{
+						write_reg_gpr(cpu, 15, 0);
+					}
+					uint16_t result = VX_val - VY_val;
+					write_reg_gpr(cpu, VX, result);
+				}
+				break;
+				default:
+				halt_invalid_instruction(opcode, instruction);
+				goto DEBUG;
+			}
+		}
+		break;
 		case 0xa:{ // LD I, addr
 			uint16_t addr = instruction & 0xFFF;
 			cpu->reg_I = addr;
@@ -113,8 +167,30 @@ void run_instructtion(Cpu* cpu)
 			
 		}
 		break;
+		case 0xe:{
+			switch (instruction & 0x00FF){
+				case 0x00a1:{ // SKP Vx
+					//TODO INPUT
+				}
+				break;
+				case 0x009e:{ // SKNP Vx
+					//TODO INPUT
+					cpu->reg_PC += 2;
+				}
+				break;
+				default:
+				halt_invalid_instruction(opcode, instruction);
+				goto DEBUG;
+			}
+		}
+		break;
 		case 0xf:{
-			switch (instruction & 0xF0FF){
+			switch (instruction & 0xF0FF){ // TODO check this
+				case 0xf007:{ // LD VX, DT
+					uint8_t timer_val = get_timer_value(cpu->reg_DT);
+					write_reg_gpr(cpu, VX, timer_val);
+				}
+				break;
 				case 0xf01e: { //ADD I, VX
 					cpu->reg_I += read_reg_gpr(cpu, VX);
 				}
@@ -143,6 +219,7 @@ void run_instructtion(Cpu* cpu)
 		print_debug_cpu(cpu);
 		while(1){}
 }
+
 void halt_invalid_instruction(uint16_t opcode, uint16_t instruction){
 	fprintf(stderr, "Invalid Instruction! opcode: %x instruction: %x \n", opcode, instruction);
 }
@@ -165,10 +242,66 @@ uint8_t read_reg_gpr(Cpu* cpu, size_t index){
 	}
 }
 
-void run(Cpu* cpu){
+void run(Cpu* cpu, uint8_t debug_enabled){
 	while(1){
-		run_instructtion(cpu);
+		run_instruction(cpu, debug_enabled);
+		cpu->op_count++;
+	}	
+}
+
+void debug_state(Cpu* cpu, uint16_t instruction, uint16_t opcode, uint16_t VX, uint16_t VY){
+	char input = 0;
+ 	printf("(s)tep | (d)etails | run (u)ntil? | break at (o)p code | (c)ontinue\n");
+ 	do {
+    	input=getchar();
+  	}while (input != 's' && input != 'd' && input != 'u' && input != 'o' && input !='c' );
+
+	if (input == 'd'){
+		printf("opcode: 0x%x VX: 0x%x VY: 0x%x\n", opcode, VX, VY);
+		print_debug_cpu(cpu);
+
 	}
+	if (input == 'u'){
+		printf("Execute until which op count?\n");
+		uint32_t next_breakpoint = 0;
+		
+		while( next_breakpoint == 0  )
+		{
+			scanf("%i", &next_breakpoint);
+		}
+		cpu->breakpoints[cpu->num_breakpoints].type = OPCOUNT;
+		cpu->breakpoints[cpu->num_breakpoints].value = next_breakpoint;
+		cpu->num_breakpoints++;
+	}
+	if (input == 'o'){
+		printf("Execute until which op code?\n");
+		uint16_t break_opcode =0;
+		while( break_opcode == 0 )
+		{
+			scanf("%hx", &break_opcode);
+		}
+
+		cpu->breakpoints[cpu->num_breakpoints].type = OPCODE;
+		cpu->breakpoints[cpu->num_breakpoints].value = break_opcode;
+		cpu->num_breakpoints++;
+	}
+	if (input == 'c'){
+		return;
+	}
+	printf("-----------------------\n");
+}
+
+uint8_t should_break(Cpu* cpu, uint16_t opcode){
+	for (int i = 0; i < cpu->num_breakpoints; i ++){
+		if (cpu->breakpoints[i].type == OPCODE && cpu->breakpoints[i].value == opcode){
+			return TRUE;
+		}
+		if (cpu->breakpoints[i].type == OPCOUNT && cpu->breakpoints[i].value == cpu->op_count){
+			return TRUE;
+		}
+
+	}
+	return FALSE;
 }
 
 void print_debug_cpu(Cpu* cpu){
