@@ -10,8 +10,8 @@
 typedef struct gfx_t{
 	unsigned char back_buffer[RES_X][RES_Y];
 	char debug_string[RES_X + 1];
-	unsigned int display_buffer[RES_X * 10 * RES_Y * 10];
 } Gfx;
+
 
 void initialize_gfx(Gfx** gfx);
 uint8_t draw_sprite(Gfx* gfx, uint8_t pos_x, uint8_t pos_y, uint8_t sprite_len, unsigned char sprite[]);

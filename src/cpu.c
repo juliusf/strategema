@@ -47,7 +47,8 @@ void run_instructtion(Cpu* cpu)
 				}
 				break;
 				default:
-					halt_invalid_instruction(opcode, instruction); 
+					halt_invalid_instruction(opcode, instruction);
+					goto DEBUG; 
 			}
 		}
 		break;
@@ -130,6 +131,7 @@ void run_instructtion(Cpu* cpu)
 		}
 		default:
 			halt_invalid_instruction(opcode, instruction);
+			goto DEBUG;
 	
 	}
 
@@ -139,11 +141,10 @@ void run_instructtion(Cpu* cpu)
 	DEBUG:
 		fprintf(stderr, "DEBUG: instruction: %x opcode: %x VX: %x VY: %x\n", instruction, opcode, VX, VY);
 		print_debug_cpu(cpu);
-		exit(-1);
+		while(1){}
 }
 void halt_invalid_instruction(uint16_t opcode, uint16_t instruction){
 	fprintf(stderr, "Invalid Instruction! opcode: %x instruction: %x \n", opcode, instruction);
-	exit(-1);
 }
 
 void write_reg_gpr(Cpu* cpu, size_t index, uint8_t value){
