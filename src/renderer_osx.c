@@ -7,15 +7,16 @@
 
 void scale_pixel(Gfx* gfx, uint8_t x, uint8_t y, uint32_t color);
 void create_window(){
-	if (!mfb_open("Strategema - Chip 8", WIN_RES_X, WIN_RES_Y))
+	if (!mfb_open("Strategema - Chip 8", WIN_RES_X, WIN_RES_Y + Y_DRAW_OFFSET))
 	{
 		printf("Could not create window\n");
 		exit(-1);
 	}
 
-	for (int i = 0; i < WIN_RES_X * WIN_RES_Y; i++){
+	for (int i = 0; i < WIN_RES_X * (WIN_RES_Y + Y_DRAW_OFFSET); i++){
 		display_buffer[i] = 0;
 	}
+
 	printf("RESX: %i RESY: %i", WIN_RES_X, WIN_RES_Y);
 	int state = mfb_update( display_buffer);
 	if (state){
@@ -28,11 +29,11 @@ void scale_pixel(Gfx* gfx, uint8_t x, uint8_t y, uint32_t color){
 	//int draw_offset = 20;
 	int pixel_size = 10;
 	int scaled_x = x * 10;
-	int scaled_y = y * 10;
+	int scaled_y = (y * 10) + Y_DRAW_OFFSET;
 
 	for (int row = scaled_y; row < scaled_y + pixel_size; row++){
 		for (int col = scaled_x; col < scaled_x + pixel_size; col++){
-			display_buffer[ (5 * WIN_RES_X)+(row * WIN_RES_X + col) ] = color;
+			display_buffer[ (row * WIN_RES_X + col) ] = color;
 		}
 	}
 }

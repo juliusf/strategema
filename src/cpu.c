@@ -27,7 +27,7 @@ void initialize_cpu(Cpu** cpu, Interconnect* interconnect){
 
 void run_instructtion(Cpu* cpu)
 {
-	const unsigned int sleep_usecs = 1 * 1000;
+	const unsigned int sleep_usecs = 2 * 1000;
 	usleep(sleep_usecs);
 	uint16_t instruction = read_word_from_ram(cpu->interconnect, cpu->reg_PC);
 	uint16_t opcode = (instruction >> 12) & 0xF;
