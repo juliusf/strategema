@@ -10,6 +10,7 @@
 
 
 void halt_invalid_instruction(uint16_t opcode, uint16_t instruction);
+void decode_instruction_to_string(uint16_t instruction, char* output);
 void debug_state(Cpu* cpu, uint16_t instruction, uint16_t opcode, uint16_t VX, uint16_t VY);
 uint8_t should_break(Cpu* cpu, uint16_t opcode);
 void initialize_cpu(Cpu** cpu, Interconnect* interconnect){
@@ -31,7 +32,7 @@ void initialize_cpu(Cpu** cpu, Interconnect* interconnect){
 
 void run_instruction(Cpu* cpu, uint8_t debug_enabled)
 {
-	const unsigned int sleep_usecs = 5 * 1000;  // hack for preventing too fast drawing
+	const unsigned int sleep_usecs = 500;  // hack for preventing too fast drawing
 	usleep(sleep_usecs);
 	uint16_t instruction = read_word_from_ram(cpu->interconnect, cpu->reg_PC);
 	uint16_t opcode = (instruction >> 12) & 0xF;
@@ -39,7 +40,9 @@ void run_instruction(Cpu* cpu, uint8_t debug_enabled)
 	uint16_t VY = (instruction >> 4) & 0xF;
 	
 	if (debug_enabled){
-			printf("op count: %i - instruction: 0x%x\n", cpu->op_count, instruction);
+			char instruction_name[80];
+			decode_instruction_to_string(instruction, instruction_name);
+			printf("%i: %s - (0x%x)\n", cpu->op_count, instruction_name, instruction);
 		if ( cpu->num_breakpoints == 0 || should_break(cpu, opcode))
 		{
 			debug_state(cpu, instruction, opcode, VX, VY);
@@ -80,14 +83,14 @@ void run_instruction(Cpu* cpu, uint8_t debug_enabled)
 		}
 		break;
 		case 0x3:{ //SE Vx == byte
-			uint8_t value = (instruction) & 0x00FF;
+			uint16_t value = (instruction) & 0x00FF;
 			if (value == read_reg_gpr(cpu, VX)){
 				cpu->reg_PC += 2;
 			}
 		}
 		break;
 		case 0x4:{ //SE VX != byte
-			uint8_t value = (instruction) & 0x00FF;
+			uint16_t value = (instruction) & 0x00FF;
 			if (value != read_reg_gpr(cpu, VX)){
 				cpu->reg_PC += 2;
 			}
@@ -100,7 +103,7 @@ void run_instruction(Cpu* cpu, uint8_t debug_enabled)
 		break;
 		case 0x7:{  //ADD Vx, byte
 			uint8_t value = instruction & 0x00FF;
-			uint8_t new_value = read_reg_gpr(cpu, VX) + value;	
+			uint16_t new_value = read_reg_gpr(cpu, VX) + value;	
 			write_reg_gpr(cpu, VX, new_value);
 		}
 		break;
@@ -150,7 +153,7 @@ void run_instruction(Cpu* cpu, uint8_t debug_enabled)
 		}
 		break;
 		case 0xc:{ // RND Vx, byte
-			uint8_t random = rand();
+			uint8_t random = rand(); //TODO FIX	
 			uint16_t value = (instruction) & 0x00FF;
 			write_reg_gpr(cpu, VX, random & value);
 		}
@@ -169,13 +172,14 @@ void run_instruction(Cpu* cpu, uint8_t debug_enabled)
 		break;
 		case 0xe:{
 			switch (instruction & 0x00FF){
-				case 0x00a1:{ // SKP Vx
-					//TODO INPUT
-				}
-				break;
-				case 0x009e:{ // SKNP Vx
+				case 0x00a1:{ // SKNP Vx
 					//TODO INPUT
 					cpu->reg_PC += 2;
+				}
+				break;
+				case 0x009e:{ // SKP Vx
+					//TODO INPUT
+
 				}
 				break;
 				default:
@@ -250,17 +254,14 @@ void run(Cpu* cpu, uint8_t debug_enabled){
 }
 
 void debug_state(Cpu* cpu, uint16_t instruction, uint16_t opcode, uint16_t VX, uint16_t VY){
+	printf("hit breakpoint\n");
+	print_debug_cpu(cpu);
 	char input = 0;
- 	printf("(s)tep | (d)etails | run (u)ntil? | break at (o)p code | (c)ontinue\n");
+ 	printf("(s)tep | run (u)ntil? | break at (o)p code | (c)ontinue\n");
  	do {
     	input=getchar();
-  	}while (input != 's' && input != 'd' && input != 'u' && input != 'o' && input !='c' );
+  	}while (input != 's' && input != 'u' && input != 'o' && input !='c' );
 
-	if (input == 'd'){
-		printf("opcode: 0x%x VX: 0x%x VY: 0x%x\n", opcode, VX, VY);
-		print_debug_cpu(cpu);
-
-	}
 	if (input == 'u'){
 		printf("Execute until which op count?\n");
 		uint32_t next_breakpoint = 0;
@@ -302,6 +303,129 @@ uint8_t should_break(Cpu* cpu, uint16_t opcode){
 
 	}
 	return FALSE;
+}
+
+void decode_instruction_to_string(uint16_t instruction, char* output){
+	uint16_t opcode = (instruction >> 12) & 0xF;
+	uint16_t VX = (instruction >> 8) & 0xF;
+	uint16_t VY = (instruction >> 4) & 0xF;
+	uint16_t byte = instruction & 0x00FF;
+	uint16_t addr = instruction& 0x0FFF;
+	
+
+	switch (opcode){
+		case 0x0:{
+			switch(instruction){ 
+				case 0x00EE: { // RET
+					sprintf(output, "RET");
+				}
+				break;
+				case 0x00E0:{ // CLS
+					sprintf(output, "CLS");
+				}
+				break;
+				default:
+					sprintf(output, "INVALID"); 
+			}
+		}
+		break;
+		case 0x1:{ // JMP ADDR
+			sprintf(output, "JMP %x", addr);
+		}
+		break;
+		case 0x2:{ //CALL addr
+			sprintf(output, "CALL %x", addr);
+		}
+		break;
+		case 0x3:{ //SE Vx == byte
+			sprintf(output, "SE %x %x", VX, byte);
+		}
+		break;
+		case 0x4:{ //SE VX != byte
+			sprintf(output, "SNE %x %x", VX, byte);
+		}
+		break;
+		case 0x6:{ // LD Vx, byte
+			sprintf(output, "LD %x %x", VX, byte);
+		}
+		break;
+		case 0x7:{  //ADD Vx, byte
+			sprintf(output, "ADD %x %x", VX, byte);
+		}
+		break;
+		case 0x8:{
+			switch(instruction & 0xF00F){
+				case (0x8000):{ // Vx = Vy
+					sprintf(output, "LD %x %x", VX, VY);
+				}
+				break;
+				case (0x8001):{ //OR VX, VY
+					sprintf(output, "OR %x %x", VX, VY);
+				}
+				break;
+				case(0x8002):{ //AND VX, Vy
+					sprintf(output, "AND %x %x", VX, VY);
+				}
+				break;
+				case(0x8005):{ //SUB VX, Vy
+					sprintf(output, "SUB %x %x", VX, VY);
+				}
+				break;
+				default:
+					printf(output, "INVALID");
+			}
+		}
+		break;
+		case 0xa:{ // LD I, addr
+			sprintf(output, "LD I %x", addr);
+		}
+		break;
+		case 0xc:{ // RND Vx, byte
+			sprintf(output, "RND %x %x", VX, byte);
+		}
+		break;
+		case 0xd:{ // DRW Vx, Vy, nibble
+			sprintf(output, "DRW %x %x %x", VX, VY, instruction & 0x000F);
+		}
+		break;
+		case 0xe:{
+			switch (instruction & 0x00FF){
+				case 0x00a1:{ // SKP Vx
+					sprintf(output, "SKNP %x", VX);
+				}
+				break;
+				case 0x009e:{ // SKNP Vx
+					printf(output, "SKP %x", VX);
+				}
+				break;
+				default:
+				printf(output, "INVALID");
+			}
+		}
+		break;
+		case 0xf:{
+			switch (instruction & 0xF0FF){ // TODO check this
+				case 0xf007:{ // LD VX, DT
+					printf(output, "LD %x DT", VX);
+				}
+				break;
+				case 0xf01e: { //ADD I, VX
+					printf(output, "ADD I, %x", VX);
+				}
+				break;
+				case 0xf015: { //LD DT, VX
+					printf(output, "LD DT, %x", VX);
+				}
+				break;
+				default:
+					printf(output, "INVALID");
+			}
+		break;
+		}
+		default:
+			printf(output, "INVALID");
+	
+	}
 }
 
 void print_debug_cpu(Cpu* cpu){
