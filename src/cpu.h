@@ -21,7 +21,7 @@ typedef struct cpu_t{
 	uint16_t reg_I;
 	uint16_t reg_PC;
 	uint8_t reg_sp;
-	Timer* reg_DT; //TODO convert to correct timer Type
+	//Timer* reg_DT; //TODO convert to correct timer Type
 	uint32_t reg_ST; //TODO convert to correct timer Type
 	uint32_t op_count;
 	Breakpoint breakpoints[MAX_NUM_BREAKPOINTS];

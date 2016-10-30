@@ -25,14 +25,13 @@ void initialize_cpu(Cpu** cpu, Interconnect* interconnect){
 	
 	(*cpu)->num_breakpoints = 0;
 
-
-	initialize_timer( &((*cpu)->reg_DT));
+	initialize_timer();
 	srand(time(NULL));  // initializing random
 }
 
 void run_instruction(Cpu* cpu, uint8_t debug_enabled)
 {
-	const unsigned int sleep_usecs = 500;  // hack for preventing too fast drawing
+	const unsigned int sleep_usecs = 2000;  // hack for preventing too fast drawing
 	usleep(sleep_usecs);
 	uint16_t instruction = read_word_from_ram(cpu->interconnect, cpu->reg_PC);
 	uint16_t opcode = (instruction >> 12) & 0xF;
@@ -191,7 +190,7 @@ void run_instruction(Cpu* cpu, uint8_t debug_enabled)
 		case 0xf:{
 			switch (instruction & 0xF0FF){ // TODO check this
 				case 0xf007:{ // LD VX, DT
-					uint8_t timer_val = get_timer_value(cpu->reg_DT);
+					uint8_t timer_val = get_timer_value();
 					write_reg_gpr(cpu, VX, timer_val);
 				}
 				break;
@@ -200,7 +199,7 @@ void run_instruction(Cpu* cpu, uint8_t debug_enabled)
 				}
 				break;
 				case 0xf015: { //LD DT, VX
-					set_timer_value(cpu->reg_DT,VX);
+					set_timer_value(VX);
 				}
 				break;
 				default:
