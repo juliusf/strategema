@@ -1,14 +1,16 @@
 #include "gfx.h"
+#include "renderer_sdl.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "renderer_osx.h"
+
 
 void draw_screen(Gfx* gfx);
 uint8_t draw_pixel(Gfx* gfx, uint8_t x, uint8_t y);
 void initialize_gfx(Gfx** gfx){
 	*(gfx) = (Gfx*) malloc(sizeof(Gfx));
 	memset((*gfx), 0x00, RES_X * RES_Y + RES_X + 1); // HACKY	
+	init_sdl_renderer();
 	create_window();
 }
 
