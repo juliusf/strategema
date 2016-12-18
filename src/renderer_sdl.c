@@ -5,7 +5,6 @@
 
 void clear_render_screen();
 
-
 void init_sdl_renderer(){
     if (SDL_Init(SDL_INIT_VIDEO| SDL_INIT_NOPARACHUTE) != 0) {
     fprintf(stderr,
@@ -28,9 +27,7 @@ void create_window(){
     window = NULL;
     renderer = NULL;
     SDL_Init(SDL_INIT_VIDEO);
-    int posX = 150;
-    int posY = 150;
-    window = SDL_CreateWindow("Strategema", posX, posY, WIN_RES_X, WIN_RES_Y, 0);
+    window = SDL_CreateWindow("Strategema", WIN_INITIAL_X, WIN_INITIAL_Y, WIN_RES_X, WIN_RES_Y, 0);
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
     clear_render_screen();
