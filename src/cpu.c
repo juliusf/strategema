@@ -39,13 +39,14 @@ void run_instruction(Cpu* cpu, uint8_t debug_enabled)
 	uint16_t VY = (instruction >> 4) & 0xF;
 	
 	if (debug_enabled){
-			char instruction_name[80];
+			char* instruction_name = malloc(sizeof(char) * 120);
 			decode_instruction_to_string(instruction, instruction_name);
 			printf("%i: %s - (0x%x)\n", cpu->op_count, instruction_name, instruction);
 		if ( cpu->num_breakpoints == 0 || should_break(cpu, opcode))
 		{
 			debug_state(cpu, instruction, opcode, VX, VY);
 		}
+		free(instruction_name);
 	}
 
 
@@ -146,6 +147,13 @@ void run_instruction(Cpu* cpu, uint8_t debug_enabled)
 			}
 		}
 		break;
+		case 0x9:{ // SNE VX, VY
+			if (read_reg_gpr(cpu, VX) != read_reg_gpr(cpu, VY))
+			{
+				cpu->reg_PC +=2;
+			}
+		}
+		break;
 		case 0xa:{ // LD I, addr
 			uint16_t addr = instruction & 0xFFF;
 			cpu->reg_I = addr;
@@ -153,6 +161,7 @@ void run_instruction(Cpu* cpu, uint8_t debug_enabled)
 		break;
 		case 0xc:{ // RND Vx, byte
 			uint8_t random = rand(); //TODO FIX	
+			printf("random: %d\n", random);
 			uint16_t value = (instruction) & 0x00FF;
 			write_reg_gpr(cpu, VX, random & value);
 		}
@@ -195,11 +204,20 @@ void run_instruction(Cpu* cpu, uint8_t debug_enabled)
 				}
 				break;
 				case 0xf01e: { //ADD I, VX
-					cpu->reg_I += read_reg_gpr(cpu, VX);
+					uint16_t value = read_reg_gpr(cpu, VX);
+					cpu->reg_I += value;
 				}
 				break;
 				case 0xf015: { //LD DT, VX
-					set_timer_value(VX);
+					set_timer_value(read_reg_gpr(cpu, VX));
+				}
+				break;
+				case 0xf065: { // LDVx, [I]
+					uint16_t start_addr = cpu->reg_I;
+					//uint8_t upper_bound = read_reg_gpr(cpu, VX);
+					for (int gpr_nr = 0; gpr_nr < VX +1; gpr_nr++){
+						write_reg_gpr(cpu, gpr_nr, cpu->interconnect->ram[start_addr + gpr_nr]);
+					}
 				}
 				break;
 				default:
@@ -245,7 +263,7 @@ uint8_t read_reg_gpr(Cpu* cpu, size_t index){
 	}
 }
 
-void run(Cpu* cpu, uint8_t debug_enabled){
+void run(Cpu* cpu, uint8_t debug_enabled){	
 	while(1){
 		run_instruction(cpu, debug_enabled);
 		cpu->op_count++;
@@ -375,6 +393,10 @@ void decode_instruction_to_string(uint16_t instruction, char* output){
 			}
 		}
 		break;
+		case 0x9:{ // SNE VX, VY
+			sprintf(output, "SNE %x %x", VX, VY);
+		}
+		break;
 		case 0xa:{ // LD I, addr
 			sprintf(output, "LD I %x", addr);
 		}
@@ -394,35 +416,42 @@ void decode_instruction_to_string(uint16_t instruction, char* output){
 				}
 				break;
 				case 0x009e:{ // SKNP Vx
-					printf(output, "SKP %x", VX);
+					sprintf(output, "SKP %x", VX);
 				}
 				break;
 				default:
-				printf(output, "INVALID");
+				sprintf(output, "INVALID");
 			}
 		}
 		break;
 		case 0xf:{
 			switch (instruction & 0xF0FF){ // TODO check this
 				case 0xf007:{ // LD VX, DT
-					printf(output, "LD %x DT", VX);
+					sprintf(output, "LD %x DT", VX);
 				}
 				break;
-				case 0xf01e: { //ADD I, VX
-					printf(output, "ADD I, %x", VX);
+				
+				case 0xf01e: { //
+					sprintf(output, "ADD I, %x", VX);
 				}
 				break;
+
 				case 0xf015: { //LD DT, VX
-					printf(output, "LD DT, %x", VX);
+					sprintf(output, "LD DT, %x", VX);
+				}
+				break;
+
+				case 0xf065: {
+					sprintf(output, "LD %x, [I]", VX);
 				}
 				break;
 				default:
-					printf(output, "INVALID");
+					sprintf(output, "INVALID");
 			}
 		break;
 		}
 		default:
-			printf(output, "INVALID");
+			sprintf(output, "INVALID");
 	
 	}
 }
