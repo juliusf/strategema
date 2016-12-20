@@ -39,14 +39,13 @@ void run_instruction(Cpu* cpu, uint8_t debug_enabled)
 	uint16_t VY = (instruction >> 4) & 0xF;
 	
 	if (debug_enabled){
-			char* instruction_name = malloc(sizeof(char) * 120);
+			char instruction_name[80];
 			decode_instruction_to_string(instruction, instruction_name);
 			printf("%i: %s - (0x%x)\n", cpu->op_count, instruction_name, instruction);
 		if ( cpu->num_breakpoints == 0 || should_break(cpu, opcode))
 		{
 			debug_state(cpu, instruction, opcode, VX, VY);
 		}
-		free(instruction_name);
 	}
 
 
@@ -96,6 +95,15 @@ void run_instruction(Cpu* cpu, uint8_t debug_enabled)
 			}
 		}
 		break;
+		case 0x5:{ // SE Vx, Vy
+			uint8_t value1 = read_reg_gpr(cpu, VX);
+			uint8_t value2 = read_reg_gpr(cpu, VY);
+
+			if (value1 == value2){
+				cpu->reg_PC += 2;
+			}
+		}
+		break;
 		case 0x6:{ // LD Vx, byte
 			uint8_t value = instruction & 0x00FF;
 			write_reg_gpr(cpu, VX, value);
@@ -128,17 +136,59 @@ void run_instruction(Cpu* cpu, uint8_t debug_enabled)
 					write_reg_gpr(cpu, VX, result);
 				}
 				break;
+				case(0x8003):{ //XOR VX, Vy
+					uint16_t VX_val = read_reg_gpr(cpu, VX);
+					uint16_t VY_val = read_reg_gpr(cpu, VY);
+					uint16_t result = VX_val ^ VY_val;
+					write_reg_gpr(cpu, VX, result);
+				}
+				break;
+				case (0x8004):{ // ADD Vx, Vy
+					uint8_t value1 = read_reg_gpr(cpu, VX);
+					uint8_t value2 = read_reg_gpr(cpu, VY);
+
+					uint8_t result = value1 + value2;
+					if (result < value1 || result < value2){
+						cpu->reg_gpr[15] = 1;
+					}else{
+						cpu->reg_gpr[15] = 0;
+					}
+					write_reg_gpr(cpu, VX, result);
+				}
+				break;
 				case(0x8005):{ //SUB VX, Vy
 					uint16_t VX_val = read_reg_gpr(cpu, VX);
 					uint16_t VY_val = read_reg_gpr(cpu, VY);
 					if (VX_val > VY_val){
-						write_reg_gpr(cpu, 15, 1);
+						write_reg_gpr(cpu, 0xF, 1);
 					}else
 					{
-						write_reg_gpr(cpu, 15, 0);
+						write_reg_gpr(cpu, 0xF, 0);
 					}
 					uint16_t result = VX_val - VY_val;
 					write_reg_gpr(cpu, VX, result);
+				}
+				break;
+				case(0x8006):{ //SHR Vx {, Vy}
+					uint8_t value = read_reg_gpr(cpu, VX);
+					if (value >> 7){
+						cpu->reg_gpr[15] = 1;
+					}else{
+						cpu->reg_gpr[15] = 0;
+					}
+					value /=2;
+					write_reg_gpr(cpu, VX, value);
+				}
+				break;
+				case(0x800e):{ //SHL Vx {, Vy}
+					uint8_t value = read_reg_gpr(cpu, VX);
+					if (value >> 7){
+						cpu->reg_gpr[15] = 1;
+					}else{
+						cpu->reg_gpr[15] = 0;
+					}
+					value *=2;
+					write_reg_gpr(cpu, VX, value);
 				}
 				break;
 				default:
@@ -161,7 +211,6 @@ void run_instruction(Cpu* cpu, uint8_t debug_enabled)
 		break;
 		case 0xc:{ // RND Vx, byte
 			uint8_t random = rand(); //TODO FIX	
-			printf("random: %d\n", random);
 			uint16_t value = (instruction) & 0x00FF;
 			write_reg_gpr(cpu, VX, random & value);
 		}
@@ -203,6 +252,11 @@ void run_instruction(Cpu* cpu, uint8_t debug_enabled)
 					write_reg_gpr(cpu, VX, timer_val);
 				}
 				break;
+				case 0xf00a: { // LD Vx, K
+					//TODO: Currently key 0 is always pressed
+					write_reg_gpr(cpu, VX, 0);
+				}
+				break;
 				case 0xf01e: { //ADD I, VX
 					uint16_t value = read_reg_gpr(cpu, VX);
 					cpu->reg_I += value;
@@ -210,6 +264,34 @@ void run_instruction(Cpu* cpu, uint8_t debug_enabled)
 				break;
 				case 0xf015: { //LD DT, VX
 					set_timer_value(read_reg_gpr(cpu, VX));
+				}
+				break;
+				case 0xf018: { // LD ST, Vx
+					// Sound not implemented
+				}
+				break;
+				case 0xf029: { //LD F, Vx
+					uint8_t character = read_reg_gpr(cpu, VX);
+					uint16_t addr = cpu->interconnect->sprite_lookup_table[character];
+					cpu->reg_I = addr;
+				}
+				case 0xf033: { // LD, B Vx
+					uint8_t value = read_reg_gpr(cpu, VX);
+					uint8_t hundreds = value / 100;
+					uint8_t tens = (value - (hundreds * 100)) / 10;
+					uint8_t ones = (value - (hundreds * 100) - (tens * 10));
+
+					write_byte_to_ram(cpu->interconnect, cpu->reg_I, hundreds);
+					write_byte_to_ram(cpu->interconnect, cpu->reg_I + 1, tens);
+					write_byte_to_ram(cpu->interconnect, cpu->reg_I + 2, ones);
+							
+				}
+				break;
+				case 0xf055:{ // LD [I], VX
+					for (int i = 0 ; i < VX +1; i++){
+						uint8_t value = read_reg_gpr(cpu, i);
+						write_byte_to_ram(cpu->interconnect, cpu->reg_I + i, value);
+					}
 				}
 				break;
 				case 0xf065: { // LDVx, [I]
@@ -246,10 +328,13 @@ void halt_invalid_instruction(uint16_t opcode, uint16_t instruction){
 }
 
 void write_reg_gpr(Cpu* cpu, size_t index, uint8_t value){
-	if (index != 0xF  && index <= NUM_GPR){
+	if (index <= NUM_GPR){
+		if (index == 0xF){
+			printf("WARNING! Write to system General Purpose Register 0xF!\n");
+		}
 		cpu->reg_gpr[index] = value;
 	}else{
-		fprintf(stderr, "write to invalid general purpose register!\n");
+		fprintf(stderr, "write to invalid general purpose register: %lu \n", index);
 		exit(-1);
 	}
 }
@@ -274,10 +359,10 @@ void debug_state(Cpu* cpu, uint16_t instruction, uint16_t opcode, uint16_t VX, u
 	printf("hit breakpoint\n");
 	print_debug_cpu(cpu);
 	char input = 0;
- 	printf("(s)tep | run (u)ntil? | break at (o)p code | (c)ontinue\n");
+ 	printf("(s)tep | run (u)ntil? | break at (o)p code | (c)ontinue | inspect (r)am\n");
  	do {
     	input=getchar();
-  	}while (input != 's' && input != 'u' && input != 'o' && input !='c' );
+  	
 
 	if (input == 'u'){
 		printf("Execute until which op count?\n");
@@ -290,6 +375,7 @@ void debug_state(Cpu* cpu, uint16_t instruction, uint16_t opcode, uint16_t VX, u
 		cpu->breakpoints[cpu->num_breakpoints].type = OPCOUNT;
 		cpu->breakpoints[cpu->num_breakpoints].value = next_breakpoint;
 		cpu->num_breakpoints++;
+		return;
 	}
 	if (input == 'o'){
 		printf("Execute until which op code?\n");
@@ -302,11 +388,67 @@ void debug_state(Cpu* cpu, uint16_t instruction, uint16_t opcode, uint16_t VX, u
 		cpu->breakpoints[cpu->num_breakpoints].type = OPCODE;
 		cpu->breakpoints[cpu->num_breakpoints].value = break_opcode;
 		cpu->num_breakpoints++;
+		return;
+	}
+
+	if (input == 's'){
+		cpu->breakpoints[cpu->num_breakpoints].type = OPCOUNT;
+		cpu->breakpoints[cpu->num_breakpoints].value = cpu->op_count+=2;
+		cpu->num_breakpoints++;
+		return;
+	}
+
+	if (input == 'r'){
+		
+		int valid_input = FALSE;
+		int start_addr = -1;
+		int end_addr = -1;
+		while (!valid_input)
+		{
+			printf("start address?\n");
+			while ( (start_addr < 0) || (start_addr > 0xffff) ){
+				scanf("%x", &start_addr);	
+			}
+			printf("end address?\n");
+			
+			while (end_addr <0 || end_addr > 0xffff){
+				scanf("%x", &end_addr);	
+			}
+
+			if (start_addr < end_addr)
+			{
+				valid_input = TRUE;
+			}else{
+				start_addr = -1;
+				end_addr = -1;
+			}
+		}
+
+		printf("Memory dump from 0x%x to 0x%x:\n", start_addr, end_addr);
+		int chars_printed = 0;
+		int rows_printed = 0;
+		int col_width = 64;
+		for (int addr = start_addr; addr <= end_addr ; addr++){
+			if (chars_printed == 0){
+				printf("0x%x |", rows_printed * col_width);
+			}
+			printf(" %x", cpu->interconnect->ram[addr]);
+			chars_printed++;
+
+			if (chars_printed == col_width){
+				printf("\n");
+				chars_printed = 0;
+				rows_printed ++;
+			}
+		}
+		printf("\n");
 	}
 	if (input == 'c'){
 		return;
 	}
-	printf("-----------------------\n");
+	printf("-----------------------\n");	
+	}while (TRUE);
+	
 }
 
 uint8_t should_break(Cpu* cpu, uint16_t opcode){
@@ -366,6 +508,10 @@ void decode_instruction_to_string(uint16_t instruction, char* output){
 			sprintf(output, "LD %x %x", VX, byte);
 		}
 		break;
+		case 0x5:{ // SE Vx, Vy
+			sprintf(output, "SE %x %x", VX, VY);	
+		}
+		break;
 		case 0x7:{  //ADD Vx, byte
 			sprintf(output, "ADD %x %x", VX, byte);
 		}
@@ -384,12 +530,28 @@ void decode_instruction_to_string(uint16_t instruction, char* output){
 					sprintf(output, "AND %x %x", VX, VY);
 				}
 				break;
+				case(0x8003):{ //XOR VX, Vy
+					sprintf(output, "XOR %x %x", VX, VY);
+				}
+				break;
+				case (0x8004):{ // ADD Vx, Vy
+					sprintf(output, "ADD %x %x", VX, VY);
+				}
+				break;
 				case(0x8005):{ //SUB VX, Vy
 					sprintf(output, "SUB %x %x", VX, VY);
 				}
 				break;
+				case(0x8006):{ //SHRz Vx {, Vy}
+					sprintf(output, "SHR %x ", VX);
+				}
+				break;
+				case(0x800e):{ //SHL Vx {, Vy}
+					sprintf(output, "SHL %x ", VX);
+				}
+				break;
 				default:
-					printf(output, "INVALID");
+					sprintf(output, "INVALID");
 			}
 		}
 		break;
@@ -430,17 +592,33 @@ void decode_instruction_to_string(uint16_t instruction, char* output){
 					sprintf(output, "LD %x DT", VX);
 				}
 				break;
-				
+				case 0xf00a: { // LD Vx, K
+					sprintf(output, "LD %x, K - input not implemented!", VX);
+				}
 				case 0xf01e: { //
 					sprintf(output, "ADD I, %x", VX);
 				}
 				break;
-
 				case 0xf015: { //LD DT, VX
 					sprintf(output, "LD DT, %x", VX);
 				}
 				break;
-
+				case 0xf018: { // LD ST, Vx
+					sprintf(output, "LD ST, %x - sound not implemented!", VX);
+				}
+				break;
+				case 0xf029: { //LD F, Vx
+					sprintf(output, "LD Font, %x", VX);
+				}
+				break;
+				case 0xf033: { // LD, B Vx
+					sprintf(output, "LD BCD, %x", VX);
+				}
+				break;
+				case 0xf055:{ // LD [I], VX
+					sprintf(output, "LD [I], %x", VX);
+				}
+				break;
 				case 0xf065: {
 					sprintf(output, "LD %x, [I]", VX);
 				}
@@ -462,5 +640,7 @@ void print_debug_cpu(Cpu* cpu){
 	for (int i = 0 ; i < NUM_GPR; i++){
 		printf("REG_GPR[%i]: 0x%x\n", i, cpu->reg_gpr[i]);
 	}
+	printf("REG_PC: 0x%x\n", cpu->reg_PC);
+	printf("REG_I: 0x%x\n", cpu->reg_I);
 }
 
